@@ -1,0 +1,47 @@
+name: Mods
+
+on:
+  # Manual runs
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-Dwarnings"
+  RUSTDOCFLAGS: "-Dwarnings"
+
+jobs:
+  build-mods:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Rust toolchain
+        run: |
+          rustup target remove x86_64-pc-windows-gnu
+          rustup target remove i686-pc-windows-msvc
+          rustup toolchain install stable `
+            --target x86_64-pc-windows-msvc `
+            --component clippy,rustfmt `
+            --profile minimal `
+            --no-self-update
+          rustup default stable
+
+      - name: Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-workspace-crates: "true"
+
+      - name: Formatting
+        run: cargo fmt -- --check
+
+      - name: Build
+        run: cargo build --release -p portable-chair
+
+      - name: Tree
+        run: tree target /f /a
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: assets
+          path: target/x86_64-pc-windows-msvc/release/*.dll
