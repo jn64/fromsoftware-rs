@@ -43,7 +43,7 @@ pub unsafe extern "C" fn DllMain(_hmodule: usize, reason: u32) -> bool {
                 };
 
                 block_geom_data.spawn_geometry(
-                    "AEG099_831",
+                    "AEG099_590",
                     &GeometrySpawnParameters {
                         position: player.block_position,
                         rot_x: 0.0,
