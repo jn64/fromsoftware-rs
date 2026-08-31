@@ -1,5 +1,5 @@
 [package]
-name = "spawn-asset"
+name = "portable-chair"
 version.workspace = true
 edition.workspace = true
 repository.workspace = true
