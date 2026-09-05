@@ -9,6 +9,9 @@ publish = false
 [dependencies]
 fromsoftware-shared.workspace = true
 eldenring.workspace = true
+windows = { version = "0.61", features = [
+    "Win32_System_SystemServices",
+] }
 
 [lib]
 crate-type = ["cdylib"]

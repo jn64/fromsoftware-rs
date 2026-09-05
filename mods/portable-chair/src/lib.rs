@@ -1,4 +1,8 @@
 use std::time::Duration;
+use windows::{
+    Win32::{Foundation::HINSTANCE, System::SystemServices::DLL_PROCESS_ATTACH},
+    core::BOOL,
+};
 
 use eldenring::{
     cs::{
@@ -6,21 +10,22 @@ use eldenring::{
         WorldChrMan,
     },
     fd4::FD4TaskData,
-    util::input,
+    util::{input, system::wait_for_system_init},
 };
-use fromsoftware_shared::{FromStatic, SharedTaskImpExt};
+use fromsoftware_shared::{FromStatic, Program, SharedTaskImpExt};
 
 #[unsafe(no_mangle)]
 /// # Safety
 ///
 /// This is exposed this way such that windows LoadLibrary API can call it. Do not call this yourself.
-pub unsafe extern "C" fn DllMain(_hmodule: usize, reason: u32) -> bool {
-    if reason != 1 {
-        return true;
+pub extern "C" fn DllMain(_module: HINSTANCE, reason: u32) -> BOOL {
+    if reason != DLL_PROCESS_ATTACH {
+        return true.into();
     }
 
     // Kick off new thread.
-    std::thread::spawn(|| {
+    std::thread::spawn(move || {
+        wait_for_system_init(&Program::current(), Duration::MAX).unwrap();
         let cs_task = CSTaskImp::wait_for_instance(Duration::MAX).unwrap();
         cs_task.run_recurring(
             |_: &FD4TaskData| {
@@ -59,5 +64,5 @@ pub unsafe extern "C" fn DllMain(_hmodule: usize, reason: u32) -> bool {
         );
     });
 
-    true
+    true.into()
 }
