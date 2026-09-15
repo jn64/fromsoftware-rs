@@ -1,4 +1,5 @@
 use std::time::Duration;
+use std::{fs::File, io::Write, panic};
 
 use eldenring::{
     cs::{
@@ -18,6 +19,12 @@ pub unsafe extern "C" fn DllMain(_hmodule: usize, reason: u32) -> bool {
     if reason != 1 {
         return true;
     }
+
+    panic::set_hook(Box::new(|panic_info| {
+        if let Ok(mut file) = File::create("crash.log") {
+            _ = writeln!(file, "{}", panic_info);
+        }
+    }));
 
     // Kick off new thread.
     std::thread::spawn(|| {
