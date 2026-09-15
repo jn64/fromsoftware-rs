@@ -1,0 +1,62 @@
+name: Examples
+
+on:
+  # Manual run
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-Dwarnings"
+  RUSTDOCFLAGS: "-Dwarnings"
+
+jobs:
+  build-examples:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Rust toolchain
+        run: |
+          rustup target remove x86_64-pc-windows-gnu
+          rustup target remove i686-pc-windows-msvc
+          rustup toolchain install stable `
+            --target x86_64-pc-windows-msvc `
+            --component clippy,rustfmt `
+            --profile minimal `
+            --no-self-update
+          rustup default stable
+
+      - name: Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-workspace-crates: "true"
+
+      - name: Build examples with ci profile
+        run: cargo build --profile ci --verbose -p apply-speffect -p debug-line -p invoke-esd -p spawn-asset -p present-action-button
+
+      - name: Build examples with release profile (opt-level z)
+        run: cargo build --release --verbose -p apply-speffect -p debug-line -p invoke-esd -p spawn-asset -p present-action-button
+
+      - name: Move DLLs to .../release-z/
+        shell: bash
+        run: |
+          mkdir -vp target/x86_64-pc-windows-msvc/release-z/
+          mv -v target/x86_64-pc-windows-msvc/release/*.dll target/x86_64-pc-windows-msvc/release-z/
+
+      - name: Build examples with release profile (opt-level 0)
+        run: cargo build --release --config profile.release.opt-level=0 --verbose -p apply-speffect -p debug-line -p invoke-esd -p spawn-asset -p present-action-button
+
+      - name: Move DLLs to .../release-0/
+        shell: bash
+        run: |
+          mkdir -vp target/x86_64-pc-windows-msvc/release-0/
+          mv -v target/x86_64-pc-windows-msvc/release/*.dll target/x86_64-pc-windows-msvc/release-0/
+
+      - name: Upload DLLs
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: examples-${{ github.sha }}
+          path: |
+            target/x86_64-pc-windows-msvc/ci/*.dll
+            target/x86_64-pc-windows-msvc/release-z/*.dll
+            target/x86_64-pc-windows-msvc/release-0/*.dll
